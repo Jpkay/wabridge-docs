@@ -1,0 +1,70 @@
+---
+title: Sending Messages
+description: Send WhatsApp messages through the WaBridge API
+---
+
+## Basic Text Message
+
+```bash
+curl -X POST https://api.wabridge.co/v1/messages \
+  -H "X-API-Key: wab_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "TENANT_ID",
+    "to": "+250788000001",
+    "type": "text",
+    "content": {
+      "body": "Hello from WaBridge!"
+    }
+  }'
+```
+
+## The 24-Hour Messaging Window
+
+WhatsApp enforces a **24-hour messaging window**. You can only send free-form messages (text, media, interactive) if the recipient has messaged you within the last 24 hours.
+
+To message someone outside this window, use a **template message** (pre-approved by Meta).
+
+<Note>
+  WaBridge tracks the messaging window automatically. If you try to send a non-template message outside the window, you'll receive a `422 CONVERSATION_WINDOW_EXPIRED` error.
+</Note>
+
+## Preventing Duplicate Messages
+
+Use the `idempotency_key` parameter to prevent duplicate sends during retries:
+
+```json
+{
+  "tenant_id": "TENANT_ID",
+  "to": "+250788000001",
+  "type": "text",
+  "content": { "body": "Order confirmed!" },
+  "idempotency_key": "order-123-confirmation"
+}
+```
+
+If the same key is sent again, WaBridge returns the original message with `_deduplicated: true` and a `409` status code.
+
+## Message Status Tracking
+
+After sending, messages go through these statuses:
+
+```
+pending → sent → delivered → read
+                           ↘ failed
+```
+
+Track status changes via [webhooks](/guides/webhooks) (`message.status_changed` event) or by [listing messages](/api-reference/messages/list-messages).
+
+## Marking Messages as Read
+
+Send read receipts back to WhatsApp:
+
+```bash
+curl -X POST https://api.wabridge.co/v1/messages/mark-read \
+  -H "X-API-Key: wab_your_key" \
+  -d '{
+    "tenant_id": "TENANT_ID",
+    "message_id": "MESSAGE_ID"
+  }'
+```

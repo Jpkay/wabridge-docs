@@ -1,0 +1,171 @@
+---
+title: Automations
+description: Set up automated workflows and AI-powered replies
+---
+
+Automations let you respond to incoming messages automatically. Build workflows that send replies, trigger AI responses, call external webhooks, or assign conversations — all without writing backend code.
+
+## Creating an Automation
+
+```bash
+curl -X POST https://api.wabridge.co/v1/automations \
+  -H "X-API-Key: wab_your_key" \
+  -d '{
+    "tenant_id": "TENANT_ID",
+    "name": "AI Support Agent",
+    "trigger_type": "message_received",
+    "workflow": [
+      {
+        "type": "ai_respond",
+        "config": {
+          "system_prompt": "You are a helpful customer support agent for an e-commerce store. Be concise and friendly.",
+          "model": "claude-sonnet-4-5-20250514",
+          "max_tokens": 300
+        }
+      }
+    ]
+  }'
+```
+
+<Note>
+  Automations are created **inactive** by default. Activate them with a PATCH request setting `is_active: true`.
+</Note>
+
+## Trigger Types
+
+### `message_received`
+
+Fires on every inbound message. Use workflow conditions to filter.
+
+```json
+{
+  "trigger_type": "message_received"
+}
+```
+
+### `keyword_match`
+
+Fires when an inbound message contains a specific keyword.
+
+```json
+{
+  "trigger_type": "keyword_match",
+  "trigger_config": {
+    "keyword": "help"
+  }
+}
+```
+
+## Workflow Nodes
+
+Workflows are arrays of nodes executed in sequence. Each node has a `type` and `config`.
+
+### `send_message`
+
+Send a text reply:
+
+```json
+{
+  "type": "send_message",
+  "config": {
+    "body": "Thanks for reaching out! We'll get back to you shortly."
+  }
+}
+```
+
+Supports variable interpolation: `{{tenant.name}}`, `{{contact.display_name}}`
+
+### `ai_respond`
+
+Generate a response using AI:
+
+```json
+{
+  "type": "ai_respond",
+  "config": {
+    "system_prompt": "You are a support agent. Answer questions about our products.",
+    "model": "claude-sonnet-4-5-20250514",
+    "max_tokens": 500,
+    "temperature": 0.7,
+    "conversation_history_count": 10
+  }
+}
+```
+
+Supported models:
+- `claude-sonnet-4-5-20250514` (default)
+- `gpt-4-turbo`
+
+The AI receives the conversation history for context.
+
+### `condition`
+
+Branch the workflow based on message content:
+
+```json
+{
+  "type": "condition",
+  "config": {
+    "field": "message.content.body",
+    "operator": "contains",
+    "value": "urgent"
+  },
+  "children": [
+    {
+      "type": "assign_conversation",
+      "config": { "assigned_to": "support-lead" }
+    }
+  ]
+}
+```
+
+Operators: `contains`, `equals`, `starts_with`, `ends_with`, `matches` (regex)
+
+### `call_webhook`
+
+Call an external URL when a message is received:
+
+```json
+{
+  "type": "call_webhook",
+  "config": {
+    "url": "https://yourapp.com/api/whatsapp-handler",
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer your-token"
+    }
+  }
+}
+```
+
+### `assign_conversation`
+
+Assign the conversation to a team member:
+
+```json
+{
+  "type": "assign_conversation",
+  "config": {
+    "assigned_to": "agent-jane"
+  }
+}
+```
+
+## Rate Limiting
+
+Each automation has a `max_executions_per_hour` limit (default: 100). When exceeded, executions are logged with `status: "rate_limited"`.
+
+## Monitoring
+
+View execution logs to debug automations:
+
+```bash
+curl "https://api.wabridge.co/v1/automations/AUTOMATION_ID/logs?tenant_id=TENANT_ID" \
+  -H "X-API-Key: wab_your_key"
+```
+
+Each log includes:
+- `status` — `success`, `error`, or `rate_limited`
+- `actions_taken` — what the workflow did
+- `duration_ms` — execution time
+- `error_message` — details if something went wrong

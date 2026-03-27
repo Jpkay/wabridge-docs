@@ -1,0 +1,80 @@
+---
+title: API Overview
+description: WaBridge REST API reference
+---
+
+## Base URL
+
+```
+https://api.wabridge.co/v1
+```
+
+## Authentication
+
+All endpoints require an API key via the `X-API-Key` header. See [Authentication](/authentication) for details.
+
+## Request Format
+
+- All request bodies use `application/json` (except media upload which uses `multipart/form-data`)
+- All responses return `application/json`
+- Dates use ISO 8601 format
+- IDs are UUIDs
+
+## Pagination
+
+List endpoints support pagination:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `limit` | Number of items to return | 50 |
+| `offset` | Number of items to skip | 0 |
+
+Messages use cursor-based pagination with the `before` parameter (ISO timestamp).
+
+## Rate Limits
+
+API requests are rate-limited per API key. Current limits:
+
+| Plan | Requests/min |
+|------|-------------|
+| Starter | 60 |
+| Growth | 300 |
+| Scale | 1000 |
+
+Rate-limited requests return `429` with a `Retry-After` header.
+
+## Error Format
+
+All errors follow a consistent format:
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable description",
+    "details": {}
+  }
+}
+```
+
+### Error Codes
+
+| Code | HTTP Status | Description |
+|------|------------|-------------|
+| `INVALID_REQUEST` | 400 | Missing or invalid parameters |
+| `INVALID_PHONE_NUMBER` | 400 | Phone number not in E.164 format |
+| `INVALID_API_KEY` | 401 | API key is missing or invalid |
+| `TENANT_NOT_FOUND` | 403 | Tenant doesn't exist or isn't yours |
+| `TENANT_NOT_CONNECTED` | 403 | Tenant hasn't connected WhatsApp yet |
+| `CONVERSATION_NOT_FOUND` | 404 | Conversation doesn't exist |
+| `CONTACT_NOT_FOUND` | 404 | Contact doesn't exist |
+| `DUPLICATE_MESSAGE` | 409 | Idempotency key already used |
+| `SETUP_LINK_EXPIRED` | 410 | Setup link has expired |
+| `CONVERSATION_WINDOW_EXPIRED` | 422 | 24h window closed, use a template |
+| `RATE_LIMITED` | 429 | Too many requests |
+| `META_API_ERROR` | 502 | WhatsApp Cloud API error |
+| `INTERNAL_ERROR` | 500 | Unexpected server error |
+
+## Idempotency
+
+The [send message](/api-reference/messages/send-message) endpoint supports idempotency keys to prevent duplicate sends. Pass a unique `idempotency_key` in the request body. If a message with the same key was already sent, you'll receive a `409` response with the original message details.

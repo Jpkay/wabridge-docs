@@ -1,0 +1,248 @@
+---
+title: Message Types
+description: All supported WhatsApp message types and their content schemas
+---
+
+WaBridge supports all WhatsApp message types. Set the `type` field and provide the corresponding `content` object.
+
+## Text
+
+```json
+{
+  "type": "text",
+  "content": {
+    "body": "Hello! How can I help you?",
+    "preview_url": true
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `body` | string | Yes | Message text (max 4096 characters) |
+| `preview_url` | boolean | No | Show URL preview if message contains a link |
+
+## Image
+
+```json
+{
+  "type": "image",
+  "content": {
+    "url": "https://example.com/photo.jpg",
+    "caption": "Check this out!"
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | One of url/media_id | Public URL of the image |
+| `media_id` | string | One of url/media_id | Media ID from [upload](/api-reference/media/upload-media) |
+| `caption` | string | No | Image caption |
+
+Supported formats: JPEG, PNG. Max size: 5 MB.
+
+## Video
+
+```json
+{
+  "type": "video",
+  "content": {
+    "url": "https://example.com/video.mp4",
+    "caption": "Product demo"
+  }
+}
+```
+
+Supported formats: MP4, 3GPP. Max size: 16 MB.
+
+## Audio
+
+```json
+{
+  "type": "audio",
+  "content": {
+    "url": "https://example.com/audio.mp3"
+  }
+}
+```
+
+Max size: 16 MB.
+
+## Document
+
+```json
+{
+  "type": "document",
+  "content": {
+    "url": "https://example.com/invoice.pdf",
+    "filename": "Invoice-2026-001.pdf",
+    "caption": "Your invoice for March"
+  }
+}
+```
+
+Supported: PDF and other document types. Max size: 100 MB.
+
+## Template
+
+Templates are required for messaging outside the 24-hour window. They must be [pre-approved by Meta](/api-reference/templates/create-template).
+
+```json
+{
+  "type": "template",
+  "content": {
+    "name": "order_confirmation",
+    "language": "en",
+    "components": [
+      {
+        "type": "body",
+        "parameters": [
+          { "type": "text", "text": "ORD-12345" },
+          { "type": "text", "text": "$49.99" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Interactive Buttons
+
+Send up to 3 quick-reply buttons:
+
+```json
+{
+  "type": "interactive_buttons",
+  "content": {
+    "body": "How would you rate our service?",
+    "header": "Feedback",
+    "footer": "Tap a button to respond",
+    "buttons": [
+      { "id": "great", "title": "Great" },
+      { "id": "okay", "title": "Okay" },
+      { "id": "poor", "title": "Poor" }
+    ]
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `body` | string | Yes | Message text |
+| `buttons` | array | Yes | 1-3 buttons with `id` and `title` (max 20 chars) |
+| `header` | string | No | Header text |
+| `footer` | string | No | Footer text |
+
+## Interactive List
+
+Send a menu with sections and rows:
+
+```json
+{
+  "type": "interactive_list",
+  "content": {
+    "body": "Choose a department:",
+    "button_text": "View Options",
+    "sections": [
+      {
+        "title": "Sales",
+        "rows": [
+          { "id": "pricing", "title": "Pricing Info", "description": "Get a quote" },
+          { "id": "demo", "title": "Book a Demo" }
+        ]
+      },
+      {
+        "title": "Support",
+        "rows": [
+          { "id": "technical", "title": "Technical Help" },
+          { "id": "billing", "title": "Billing Issue" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Reaction
+
+React to a message with an emoji:
+
+```json
+{
+  "type": "reaction",
+  "content": {
+    "emoji": "👍",
+    "reacted_message_id": "wamid.abc123"
+  }
+}
+```
+
+## Location
+
+```json
+{
+  "type": "location",
+  "content": {
+    "latitude": -1.9403,
+    "longitude": 29.8739,
+    "name": "Kigali Convention Centre",
+    "address": "KG 2 Roundabout, Kigali"
+  }
+}
+```
+
+## Contact
+
+Share a contact card:
+
+```json
+{
+  "type": "contact",
+  "content": {
+    "contacts": [
+      {
+        "name": {
+          "formatted_name": "Jane Doe",
+          "first_name": "Jane",
+          "last_name": "Doe"
+        },
+        "phones": [
+          { "phone": "+250788000001", "type": "WORK" }
+        ],
+        "emails": [
+          { "email": "jane@example.com", "type": "WORK" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Inbound-Only Types
+
+These types are received from users but cannot be sent:
+
+### Button Reply
+When a user taps an interactive button:
+```json
+{
+  "message_type": "button_reply",
+  "content": {
+    "button_reply": { "id": "great", "title": "Great" },
+    "context": { "message_id": "wamid.original123" }
+  }
+}
+```
+
+### List Reply
+When a user selects from an interactive list:
+```json
+{
+  "message_type": "list_reply",
+  "content": {
+    "list_reply": { "id": "pricing", "title": "Pricing Info", "description": "Get a quote" },
+    "context": { "message_id": "wamid.original123" }
+  }
+}
+```

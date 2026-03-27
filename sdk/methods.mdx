@@ -1,0 +1,263 @@
+---
+title: SDK Methods
+description: Complete reference of all SDK methods
+---
+
+## Tenants
+
+### `client.tenants.create(data)`
+Create a new tenant.
+```typescript
+const tenant = await client.tenants.create({
+  name: "Acme Corp",
+  external_id: "cust_12345", // optional
+});
+```
+
+### `client.tenants.list(params?)`
+List all tenants.
+```typescript
+const { data, total } = await client.tenants.list({
+  status: "connected", // optional filter
+  limit: 50,
+  offset: 0,
+});
+```
+
+### `client.tenants.get(tenantId)`
+Get a single tenant.
+```typescript
+const tenant = await client.tenants.get("tenant_uuid");
+```
+
+### `client.tenants.delete(tenantId)`
+Delete a tenant and all associated data.
+```typescript
+await client.tenants.delete("tenant_uuid");
+```
+
+### `client.tenants.createSetupLink(tenantId, options?)`
+Generate a WhatsApp connection link.
+```typescript
+const link = await client.tenants.createSetupLink("tenant_uuid", {
+  success_redirect: "https://yourapp.com/connected",
+  failure_redirect: "https://yourapp.com/error",
+});
+console.log(link.url); // Share with your customer
+```
+
+### `client.tenants.getInboxToken(tenantId)`
+Generate a JWT for the inbox embed.
+```typescript
+const { token, expires_at } = await client.tenants.getInboxToken("tenant_uuid");
+```
+
+---
+
+## Messages
+
+### `client.messages.send(tenantId, data)`
+Send a message.
+```typescript
+const msg = await client.messages.send("tenant_uuid", {
+  to: "+250788000001",
+  type: "text",
+  content: { body: "Hello!" },
+  idempotency_key: "unique-key", // optional
+});
+```
+
+### `client.messages.list(tenantId, params?)`
+List messages.
+```typescript
+const { data, has_more } = await client.messages.list("tenant_uuid", {
+  conversation_id: "conv_uuid", // optional
+  direction: "inbound",         // optional
+  status: "delivered",          // optional
+  limit: 50,
+  before: "2026-03-27T00:00:00Z", // cursor pagination
+});
+```
+
+### `client.messages.markAsRead(tenantId, messageId)`
+Send a read receipt.
+```typescript
+await client.messages.markAsRead("tenant_uuid", "message_uuid");
+```
+
+---
+
+## Conversations
+
+### `client.conversations.list(tenantId, params?)`
+```typescript
+const { data, total } = await client.conversations.list("tenant_uuid", {
+  status: "open",
+  assigned_to: "agent-jane",
+  search: "+250788",
+  limit: 50,
+  offset: 0,
+});
+```
+
+### `client.conversations.get(tenantId, conversationId)`
+```typescript
+const conv = await client.conversations.get("tenant_uuid", "conv_uuid");
+console.log(conv.window_open); // true if within 24h window
+console.log(conv.unread_count);
+```
+
+### `client.conversations.update(tenantId, conversationId, data)`
+```typescript
+await client.conversations.update("tenant_uuid", "conv_uuid", {
+  status: "closed",
+  assigned_to: "agent-bob",
+  metadata: { priority: "high" },
+});
+```
+
+---
+
+## Contacts
+
+### `client.contacts.list(tenantId, params?)`
+```typescript
+const { data, total } = await client.contacts.list("tenant_uuid", {
+  search: "John",
+  limit: 50,
+});
+```
+
+### `client.contacts.get(tenantId, contactId)`
+```typescript
+const contact = await client.contacts.get("tenant_uuid", "contact_uuid");
+console.log(contact.conversation); // latest conversation or null
+```
+
+### `client.contacts.update(tenantId, contactId, data)`
+```typescript
+await client.contacts.update("tenant_uuid", "contact_uuid", {
+  display_name: "John Doe",
+  metadata: { vip: true },
+});
+```
+
+---
+
+## Templates
+
+### `client.templates.list(tenantId, params?)`
+```typescript
+const { data } = await client.templates.list("tenant_uuid", {
+  status: "APPROVED",
+});
+```
+
+### `client.templates.create(tenantId, data)`
+```typescript
+const template = await client.templates.create("tenant_uuid", {
+  name: "order_update",
+  category: "UTILITY",
+  language: "en",
+  components: [
+    {
+      type: "body",
+      text: "Your order {{1}} has been shipped!",
+    },
+  ],
+});
+```
+
+### `client.templates.get(tenantId, templateId)`
+```typescript
+const template = await client.templates.get("tenant_uuid", "template_uuid");
+```
+
+### `client.templates.delete(tenantId, templateId)`
+```typescript
+await client.templates.delete("tenant_uuid", "template_uuid");
+```
+
+### `client.templates.sync(tenantId)`
+Sync templates from Meta.
+```typescript
+const { synced } = await client.templates.sync("tenant_uuid");
+console.log(`Synced ${synced} templates`);
+```
+
+---
+
+## Automations
+
+### `client.automations.list(tenantId)`
+```typescript
+const { data } = await client.automations.list("tenant_uuid");
+```
+
+### `client.automations.create(tenantId, data)`
+```typescript
+const automation = await client.automations.create("tenant_uuid", {
+  name: "AI Support",
+  trigger_type: "message_received",
+  workflow: [
+    {
+      type: "ai_respond",
+      config: {
+        system_prompt: "You are a helpful support agent.",
+        model: "claude-sonnet-4-5-20250514",
+        max_tokens: 300,
+      },
+    },
+  ],
+});
+```
+
+### `client.automations.get(tenantId, automationId)`
+```typescript
+const automation = await client.automations.get("tenant_uuid", "auto_uuid");
+```
+
+### `client.automations.update(tenantId, automationId, data)`
+```typescript
+await client.automations.update("tenant_uuid", "auto_uuid", {
+  is_active: true, // activate the automation
+});
+```
+
+### `client.automations.delete(tenantId, automationId)`
+```typescript
+await client.automations.delete("tenant_uuid", "auto_uuid");
+```
+
+### `client.automations.getLogs(tenantId, automationId, params?)`
+```typescript
+const { data, total } = await client.automations.getLogs("tenant_uuid", "auto_uuid", {
+  status: "error",
+  limit: 20,
+});
+```
+
+---
+
+## Media
+
+### `client.media.upload(tenantId, file, filename?)`
+```typescript
+const { media_id } = await client.media.upload(
+  "tenant_uuid",
+  fileBlob,
+  "photo.jpg"
+);
+
+// Use in a message
+await client.messages.send("tenant_uuid", {
+  to: "+250788000001",
+  type: "image",
+  content: { media_id, caption: "Here's your photo" },
+});
+```
+
+### `client.media.getUrl(tenantId, mediaId)`
+```typescript
+const url = await client.media.getUrl("tenant_uuid", "media_id");
+```

@@ -1,0 +1,145 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "WaBridge",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#25D366",
+    "light": "#25D366",
+    "dark": "#25D366",
+    "anchors": {
+      "from": "#25D366",
+      "to": "#00d9ff"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Sign Up",
+      "url": "https://wabridge.co"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Dashboard",
+    "url": "https://wabridge.co"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    },
+    {
+      "name": "SDK",
+      "url": "sdk"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/wabridge"
+    },
+    {
+      "name": "Support",
+      "icon": "envelope",
+      "url": "mailto:jp@wabridge.co"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "authentication"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/whatsapp-setup",
+        "guides/sending-messages",
+        "guides/message-types",
+        "guides/automations",
+        "guides/webhooks"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": ["api-reference/overview"]
+    },
+    {
+      "group": "Messages",
+      "pages": [
+        "api-reference/messages/send-message",
+        "api-reference/messages/list-messages"
+      ]
+    },
+    {
+      "group": "Conversations",
+      "pages": [
+        "api-reference/conversations/list-conversations",
+        "api-reference/conversations/get-conversation",
+        "api-reference/conversations/update-conversation"
+      ]
+    },
+    {
+      "group": "Contacts",
+      "pages": [
+        "api-reference/contacts/list-contacts",
+        "api-reference/contacts/get-contact",
+        "api-reference/contacts/update-contact"
+      ]
+    },
+    {
+      "group": "Tenants",
+      "pages": [
+        "api-reference/tenants/create-tenant",
+        "api-reference/tenants/list-tenants",
+        "api-reference/tenants/get-tenant",
+        "api-reference/tenants/delete-tenant",
+        "api-reference/tenants/create-setup-link",
+        "api-reference/tenants/generate-inbox-token"
+      ]
+    },
+    {
+      "group": "Templates",
+      "pages": [
+        "api-reference/templates/list-templates",
+        "api-reference/templates/create-template",
+        "api-reference/templates/get-template",
+        "api-reference/templates/delete-template",
+        "api-reference/templates/sync-templates"
+      ]
+    },
+    {
+      "group": "Automations",
+      "pages": [
+        "api-reference/automations/list-automations",
+        "api-reference/automations/create-automation",
+        "api-reference/automations/get-automation",
+        "api-reference/automations/update-automation",
+        "api-reference/automations/delete-automation",
+        "api-reference/automations/get-logs"
+      ]
+    },
+    {
+      "group": "Media",
+      "pages": [
+        "api-reference/media/upload-media",
+        "api-reference/media/download-media"
+      ]
+    },
+    {
+      "group": "SDK",
+      "pages": ["sdk/overview", "sdk/installation", "sdk/methods"]
+    }
+  ],
+  "footerSocials": {
+    "x": "https://twitter.com/wabridge",
+    "github": "https://github.com/wabridge"
+  },
+  "openapi": ["/openapi.yaml"]
+}

@@ -1,0 +1,39 @@
+---
+title: SDK Overview
+description: WaBridge TypeScript SDK for Node.js and browser
+---
+
+The WaBridge SDK provides a type-safe client for the WaBridge API. It works in Node.js, Deno, and browser environments.
+
+## Features
+
+- Full TypeScript support with auto-complete
+- All API endpoints covered
+- Built-in error handling
+- Works in Node.js, Deno, and browsers
+
+## Quick Example
+
+```typescript
+import { WhatsAppBridge } from "@wabridge/sdk";
+
+const client = new WhatsAppBridge({
+  baseUrl: "https://api.wabridge.co",
+  apiKey: "wab_your_key",
+});
+
+// Create a tenant
+const tenant = await client.tenants.create({
+  name: "Acme Corp",
+  external_id: "cust_12345",
+});
+
+// Send a message
+const message = await client.messages.send(tenant.id, {
+  to: "+250788000001",
+  type: "text",
+  content: { body: "Hello from WaBridge!" },
+});
+
+console.log(message.wa_message_id);
+```

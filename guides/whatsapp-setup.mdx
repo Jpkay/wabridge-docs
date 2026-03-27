@@ -1,0 +1,66 @@
+---
+title: WhatsApp Setup
+description: How your customers connect their WhatsApp Business Account
+---
+
+WaBridge uses **Meta's Embedded Signup** to let your customers connect their WhatsApp Business Account. You don't need to manage phone numbers or Meta credentials — your customers handle that themselves.
+
+## The Setup Flow
+
+<Steps>
+  <Step title="Create a tenant">
+    Register your customer as a tenant in WaBridge:
+    ```bash
+    curl -X POST https://api.wabridge.co/v1/tenants \
+      -H "X-API-Key: wab_your_key" \
+      -d '{"name": "Acme Corp", "external_id": "cust_12345"}'
+    ```
+  </Step>
+  <Step title="Generate a setup link">
+    Create a one-time setup link for your customer:
+    ```bash
+    curl -X POST https://api.wabridge.co/v1/tenants/TENANT_ID/setup-link \
+      -H "X-API-Key: wab_your_key" \
+      -d '{
+        "success_redirect": "https://yourapp.com/whatsapp-connected",
+        "failure_redirect": "https://yourapp.com/whatsapp-error"
+      }'
+    ```
+    The response contains a `url` you share with your customer.
+  </Step>
+  <Step title="Customer connects WhatsApp">
+    Your customer clicks the link and goes through Meta's signup flow:
+    1. Logs in with their Facebook account
+    2. Creates or selects a WhatsApp Business Account
+    3. Selects or registers a phone number
+    4. Grants WaBridge permission to send messages on their behalf
+  </Step>
+  <Step title="Tenant becomes connected">
+    Once complete, the tenant status changes from `pending` to `connected`. If you provided a `success_redirect`, your customer is redirected there.
+
+    You'll also receive a `tenant.connected` webhook event.
+  </Step>
+</Steps>
+
+## Setup Link Details
+
+- Links expire after **30 days**
+- Each new link **invalidates** the previous one
+- Links are single-use — once the setup is complete, the link can't be reused
+
+## Monitoring Tenant Status
+
+Poll the tenant endpoint or listen for webhook events to track connection status:
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Tenant created, WhatsApp not connected |
+| `connected` | WhatsApp connected and ready to send messages |
+| `disconnected` | Connection lost (e.g., token revoked) |
+| `token_expiring` | Access token expiring soon, needs refresh |
+
+## Token Management
+
+WaBridge automatically exchanges short-lived Meta tokens for long-lived ones (60 days). Token refresh is handled internally — you don't need to manage this.
+
+If a token expires or is revoked, the tenant status changes to `disconnected` and you'll need to generate a new setup link.

@@ -1,0 +1,137 @@
+---
+title: Webhooks
+description: Receive real-time events from WaBridge
+---
+
+WaBridge sends webhook events to your server when things happen — new messages, status changes, tenant connections, and more.
+
+## Setting Up Webhooks
+
+Configure your webhook URL in the WaBridge dashboard or when creating your app. You'll receive events at that URL via `POST` requests.
+
+## Event Format
+
+All webhook payloads follow this format:
+
+```json
+{
+  "event": "message.received",
+  "timestamp": "2026-03-27T10:00:00Z",
+  "data": {
+    "tenant_id": "uuid",
+    "tenant_external_id": "cust_12345",
+    "message": { ... },
+    "conversation": { ... },
+    "contact": { ... }
+  }
+}
+```
+
+## Event Types
+
+| Event | Description |
+|-------|-------------|
+| `message.received` | New inbound message from a WhatsApp user |
+| `message.status_changed` | Message status updated (sent, delivered, read, failed) |
+| `tenant.connected` | Tenant completed WhatsApp setup |
+
+### `message.received`
+
+```json
+{
+  "event": "message.received",
+  "timestamp": "2026-03-27T10:00:00Z",
+  "data": {
+    "tenant_id": "t_abc123",
+    "tenant_external_id": "cust_12345",
+    "message": {
+      "id": "msg_uuid",
+      "wa_message_id": "wamid.abc",
+      "direction": "inbound",
+      "message_type": "text",
+      "content": { "body": "Hi, I need help with my order" },
+      "created_at": "2026-03-27T10:00:00Z"
+    },
+    "conversation": {
+      "id": "conv_uuid",
+      "status": "open",
+      "window_expires_at": "2026-03-28T10:00:00Z"
+    },
+    "contact": {
+      "id": "ct_uuid",
+      "phone_number": "+250788000001",
+      "display_name": "John"
+    }
+  }
+}
+```
+
+### `message.status_changed`
+
+```json
+{
+  "event": "message.status_changed",
+  "timestamp": "2026-03-27T10:00:05Z",
+  "data": {
+    "tenant_id": "t_abc123",
+    "message": {
+      "id": "msg_uuid",
+      "wa_message_id": "wamid.abc"
+    },
+    "old_status": "sent",
+    "new_status": "delivered"
+  }
+}
+```
+
+For failed messages, you'll also receive:
+```json
+{
+  "error_code": "131047",
+  "error_message": "Re-engagement message"
+}
+```
+
+## Verifying Signatures
+
+Every webhook request includes an HMAC-SHA256 signature in the `X-Webhook-Signature` header, computed using your webhook secret.
+
+```
+X-Webhook-Signature: sha256=abc123...
+X-Webhook-Timestamp: 1711526400
+X-Webhook-Event: message.received
+X-Idempotency-Key: whq_uuid
+```
+
+Verify the signature to ensure the request is from WaBridge:
+
+```typescript
+import crypto from "crypto";
+
+function verifyWebhook(body: string, signature: string, secret: string): boolean {
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(body)
+    .digest("hex");
+  return `sha256=${expected}` === signature;
+}
+```
+
+## Retry Policy
+
+If your endpoint returns a non-2xx response or times out (10s), WaBridge retries with exponential backoff:
+
+| Attempt | Delay |
+|---------|-------|
+| 1 | ~5 seconds |
+| 2 | ~10 seconds |
+| 3 | ~20 seconds |
+| 4 | ~40 seconds |
+| 5 | ~80 seconds |
+| 6-10 | ~5 minutes (capped) |
+
+After 10 failed attempts, the event is moved to a dead-letter queue.
+
+## Idempotency
+
+Each webhook includes an `X-Idempotency-Key` header. Use this to deduplicate events on your end in case of retries.

@@ -1,0 +1,70 @@
+---
+title: Introduction
+description: Add WhatsApp messaging to your SaaS in minutes
+---
+
+WaBridge is a **multi-tenant WhatsApp integration platform** built for SaaS companies. Instead of spending months building WhatsApp infrastructure, drop in our SDK and let your customers send and receive WhatsApp messages from inside your app.
+
+## Why WaBridge?
+
+<CardGroup cols={2}>
+  <Card title="5-Minute Setup" icon="bolt">
+    Drop our React component or use the REST API. No complex WhatsApp infrastructure to manage.
+  </Card>
+  <Card title="Multi-Tenant by Default" icon="users">
+    One integration serves all your customers. Each tenant connects their own WhatsApp number.
+  </Card>
+  <Card title="AI-Powered Replies" icon="robot">
+    Built-in automation engine with AI auto-replies using Claude or GPT models.
+  </Card>
+  <Card title="Built on Official APIs" icon="shield-check">
+    Uses Meta's official WhatsApp Cloud API. Enterprise-grade security and compliance.
+  </Card>
+</CardGroup>
+
+## How It Works
+
+<Steps>
+  <Step title="Create a tenant">
+    Register your customer as a tenant via the API. They get a unique ID and start in `pending` status.
+  </Step>
+  <Step title="Connect WhatsApp">
+    Generate a setup link for your customer. They connect their WhatsApp Business Account through Meta's Embedded Signup — no technical knowledge required.
+  </Step>
+  <Step title="Send & receive messages">
+    Use the REST API to send messages programmatically, or embed our inbox component for a full messaging UI.
+  </Step>
+</Steps>
+
+## Quick Example
+
+```bash
+curl -X POST https://api.wabridge.co/v1/messages \
+  -H "X-API-Key: wab_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "t_abc123",
+    "to": "+250788000001",
+    "type": "text",
+    "content": {
+      "body": "Hello from WaBridge!"
+    }
+  }'
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore all endpoints
+  </Card>
+  <Card title="SDK" icon="package" href="/sdk/overview">
+    Use our TypeScript SDK
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/guides/webhooks">
+    Receive real-time events
+  </Card>
+</CardGroup>

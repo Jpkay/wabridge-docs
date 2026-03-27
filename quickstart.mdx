@@ -1,0 +1,136 @@
+---
+title: Quickstart
+description: Get WhatsApp messaging running in your app in 5 minutes
+---
+
+## Prerequisites
+
+- A WaBridge account and API key
+- A customer who has a WhatsApp Business Account (or wants to create one)
+
+## Step 1: Get Your API Key
+
+Sign up at [wabridge.co](https://wabridge.co) and grab your API key from the dashboard. Your key starts with `wab_`.
+
+## Step 2: Create a Tenant
+
+Each of your customers is a **tenant** in WaBridge. Create one for your first customer:
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.wabridge.co/v1/tenants \
+  -H "X-API-Key: wab_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corp",
+    "external_id": "cust_12345"
+  }'
+```
+
+```typescript SDK
+import { WhatsAppBridge } from "@wabridge/sdk";
+
+const client = new WhatsAppBridge({
+  baseUrl: "https://api.wabridge.co",
+  apiKey: "wab_your_key",
+});
+
+const tenant = await client.tenants.create({
+  name: "Acme Corp",
+  external_id: "cust_12345",
+});
+```
+</CodeGroup>
+
+## Step 3: Generate a Setup Link
+
+Your customer needs to connect their WhatsApp number. Generate a setup link and send it to them:
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.wabridge.co/v1/tenants/TENANT_ID/setup-link \
+  -H "X-API-Key: wab_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "success_redirect": "https://yourapp.com/setup-complete"
+  }'
+```
+
+```typescript SDK
+const link = await client.tenants.createSetupLink(tenant.id, {
+  success_redirect: "https://yourapp.com/setup-complete",
+});
+
+console.log(link.url); // Send this to your customer
+```
+</CodeGroup>
+
+The link takes your customer through Meta's Embedded Signup flow. Once complete, their tenant status changes from `pending` to `connected`.
+
+## Step 4: Send a Message
+
+Once the tenant is connected, you can send messages:
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.wabridge.co/v1/messages \
+  -H "X-API-Key: wab_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "TENANT_ID",
+    "to": "+250788000001",
+    "type": "text",
+    "content": {
+      "body": "Hello from WaBridge!"
+    }
+  }'
+```
+
+```typescript SDK
+const message = await client.messages.send(tenant.id, {
+  to: "+250788000001",
+  type: "text",
+  content: { body: "Hello from WaBridge!" },
+});
+```
+</CodeGroup>
+
+<Note>
+  For non-template messages, the recipient must have messaged first within the last 24 hours (WhatsApp's messaging window policy). Use [templates](/api-reference/templates/create-template) to initiate conversations.
+</Note>
+
+## Step 5: Embed the Inbox (Optional)
+
+Drop the inbox component into your React app for a full messaging UI:
+
+```tsx
+import { WaBridgeInbox } from "@wabridge/react";
+
+function App() {
+  return (
+    <WaBridgeInbox
+      token="JWT_TOKEN_FROM_INBOX_TOKEN_ENDPOINT"
+      theme="dark"
+    />
+  );
+}
+```
+
+Generate the JWT token server-side using the [inbox token endpoint](/api-reference/tenants/generate-inbox-token).
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Message Types" icon="message" href="/guides/message-types">
+    Send images, templates, interactive buttons, and more
+  </Card>
+  <Card title="Automations" icon="robot" href="/guides/automations">
+    Set up AI auto-replies and keyword triggers
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/guides/webhooks">
+    Receive real-time message events
+  </Card>
+  <Card title="SDK Reference" icon="code" href="/sdk/methods">
+    Full SDK method reference
+  </Card>
+</CardGroup>

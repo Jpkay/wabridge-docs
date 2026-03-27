@@ -1,0 +1,1556 @@
+openapi: 3.1.0
+info:
+  title: WaBridge API
+  description: WhatsApp integration API for SaaS platforms. Multi-tenant messaging, automations, and AI-powered replies.
+  version: "1.0"
+  contact:
+    email: jp@wabridge.co
+    url: https://wabridge.co
+
+servers:
+  - url: https://api.wabridge.co/v1
+    description: Production
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Your WaBridge API key. Found in your dashboard.
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: INVALID_REQUEST
+            message:
+              type: string
+              example: Missing required field "tenant_id"
+            details:
+              type: object
+
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        external_id:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, connected, disconnected, token_expiring]
+        phone_number:
+          type: string
+          nullable: true
+        meta_waba_id:
+          type: string
+          nullable: true
+        meta_phone_number_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Contact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        wa_id:
+          type: string
+        phone_number:
+          type: string
+        display_name:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        contact_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [open, closed]
+        assigned_to:
+          type: string
+          nullable: true
+        window_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_message_at:
+          type: string
+          format: date-time
+        last_message_preview:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+        window_open:
+          type: boolean
+        window_time_remaining_ms:
+          type: number
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        wa_message_id:
+          type: string
+        direction:
+          type: string
+          enum: [inbound, outbound]
+        status:
+          type: string
+          enum: [pending, sent, delivered, read, failed]
+        message_type:
+          type: string
+          enum: [text, image, video, audio, document, sticker, template, interactive_buttons, interactive_list, reaction, location, contact, button_reply, list_reply]
+        content:
+          type: object
+        error_code:
+          type: string
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        meta_template_id:
+          type: string
+        name:
+          type: string
+        language:
+          type: string
+        category:
+          type: string
+          enum: [MARKETING, UTILITY, AUTHENTICATION]
+        status:
+          type: string
+          enum: [APPROVED, PENDING, REJECTED]
+        components:
+          type: array
+          items:
+            type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Automation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        trigger_type:
+          type: string
+          enum: [message_received, keyword_match]
+        trigger_config:
+          type: object
+        workflow:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowNode"
+        max_executions_per_hour:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WorkflowNode:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [condition, send_message, ai_respond, call_webhook, assign_conversation]
+        config:
+          type: object
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowNode"
+
+    AutomationLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        automation_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+          nullable: true
+        trigger_event:
+          type: object
+        actions_taken:
+          type: object
+        status:
+          type: string
+          enum: [success, error, rate_limited]
+        error_message:
+          type: string
+          nullable: true
+        duration_ms:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    TextContent:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          description: Message text
+        preview_url:
+          type: boolean
+          description: Whether to show URL previews
+
+    MediaContent:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Public URL of the media file
+        media_id:
+          type: string
+          description: Meta media ID (from upload)
+        caption:
+          type: string
+          description: Caption for image/video
+        mime_type:
+          type: string
+        filename:
+          type: string
+
+    TemplateContent:
+      type: object
+      required: [name, language]
+      properties:
+        name:
+          type: string
+        language:
+          type: string
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [header, body, button]
+              parameters:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [text, image, video, document]
+                    text:
+                      type: string
+                    url:
+                      type: string
+
+    InteractiveButtonsContent:
+      type: object
+      required: [body, buttons]
+      properties:
+        body:
+          type: string
+        header:
+          type: string
+        footer:
+          type: string
+        buttons:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            required: [id, title]
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+                maxLength: 20
+
+    InteractiveListContent:
+      type: object
+      required: [body, button_text, sections]
+      properties:
+        body:
+          type: string
+        button_text:
+          type: string
+        header:
+          type: string
+        footer:
+          type: string
+        sections:
+          type: array
+          items:
+            type: object
+            required: [title, rows]
+            properties:
+              title:
+                type: string
+              rows:
+                type: array
+                items:
+                  type: object
+                  required: [id, title]
+                  properties:
+                    id:
+                      type: string
+                    title:
+                      type: string
+                    description:
+                      type: string
+
+    ReactionContent:
+      type: object
+      required: [emoji, reacted_message_id]
+      properties:
+        emoji:
+          type: string
+        reacted_message_id:
+          type: string
+
+    LocationContent:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        name:
+          type: string
+        address:
+          type: string
+
+paths:
+  /messages:
+    post:
+      operationId: sendMessage
+      summary: Send a message
+      description: |
+        Send a WhatsApp message to a phone number. Supports text, media, templates, interactive messages, reactions, locations, and contacts.
+
+        For non-template messages, a 24-hour messaging window must be open (initiated by an inbound message from the recipient). Templates can be sent anytime.
+
+        Use `idempotency_key` to prevent duplicate sends on retries.
+      tags:
+        - Messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, to, type, content]
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                  description: The tenant sending the message
+                to:
+                  type: string
+                  description: "Recipient phone number in E.164 format (e.g., +250788000001)"
+                type:
+                  type: string
+                  enum: [text, image, video, audio, document, template, interactive_buttons, interactive_list, reaction, location, contact]
+                  description: Message type
+                content:
+                  type: object
+                  description: "Message content. Schema varies by type — see [Message Types](/guides/message-types)."
+                idempotency_key:
+                  type: string
+                  description: Unique key to prevent duplicate sends
+            examples:
+              text:
+                summary: Send a text message
+                value:
+                  tenant_id: "t_abc123"
+                  to: "+250788000001"
+                  type: "text"
+                  content:
+                    body: "Hello from WaBridge!"
+              template:
+                summary: Send a template message
+                value:
+                  tenant_id: "t_abc123"
+                  to: "+250788000001"
+                  type: "template"
+                  content:
+                    name: "order_confirmation"
+                    language: "en"
+                    components:
+                      - type: "body"
+                        parameters:
+                          - type: "text"
+                            text: "ORD-12345"
+              image:
+                summary: Send an image
+                value:
+                  tenant_id: "t_abc123"
+                  to: "+250788000001"
+                  type: "image"
+                  content:
+                    url: "https://example.com/photo.jpg"
+                    caption: "Check this out!"
+      responses:
+        "200":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message_id:
+                    type: string
+                    format: uuid
+                  wa_message_id:
+                    type: string
+                  status:
+                    type: string
+                    example: sent
+        "409":
+          description: Duplicate message (idempotency)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message_id:
+                    type: string
+                    format: uuid
+                  wa_message_id:
+                    type: string
+                  status:
+                    type: string
+                  _deduplicated:
+                    type: boolean
+                    example: true
+        "422":
+          description: Messaging window expired — use a template instead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      operationId: listMessages
+      summary: List messages
+      description: Retrieve messages for a tenant, optionally filtered by conversation, direction, or status. Uses cursor-based pagination.
+      tags:
+        - Messages
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: conversation_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [inbound, outbound]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, sent, delivered, read, failed]
+        - name: before
+          in: query
+          description: ISO timestamp for cursor pagination
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Message"
+                  total:
+                    type: integer
+                  has_more:
+                    type: boolean
+
+  /messages/mark-read:
+    post:
+      operationId: markMessageRead
+      summary: Mark message as read
+      description: Send a read receipt for a message back to WhatsApp.
+      tags:
+        - Messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, message_id]
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                message_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Read receipt sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /conversations:
+    get:
+      operationId: listConversations
+      summary: List conversations
+      description: Retrieve conversations for a tenant with contact details and messaging window status.
+      tags:
+        - Conversations
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed]
+        - name: assigned_to
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search by phone number or contact name
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Conversation"
+                  total:
+                    type: integer
+
+  /conversations/{id}:
+    get:
+      operationId: getConversation
+      summary: Get conversation
+      description: Retrieve a single conversation with contact details, window status, and unread count.
+      tags:
+        - Conversations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Conversation details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Conversation"
+                  - type: object
+                    properties:
+                      unread_count:
+                        type: integer
+                      contacts:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Contact"
+
+    patch:
+      operationId: updateConversation
+      summary: Update conversation
+      description: Update conversation status, assignment, or metadata.
+      tags:
+        - Conversations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id]
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+                  enum: [open, closed]
+                assigned_to:
+                  type: string
+                metadata:
+                  type: object
+                  description: Merged with existing metadata
+      responses:
+        "200":
+          description: Updated conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /contacts:
+    get:
+      operationId: listContacts
+      summary: List contacts
+      tags:
+        - Contacts
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of contacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Contact"
+                  total:
+                    type: integer
+
+  /contacts/{id}:
+    get:
+      operationId: getContact
+      summary: Get contact
+      description: Retrieve a contact with their latest conversation.
+      tags:
+        - Contacts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Contact details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Contact"
+                  - type: object
+                    properties:
+                      conversation:
+                        type: object
+                        nullable: true
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          status:
+                            type: string
+                          last_message_at:
+                            type: string
+                            format: date-time
+
+    patch:
+      operationId: updateContact
+      summary: Update contact
+      tags:
+        - Contacts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id]
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                display_name:
+                  type: string
+                metadata:
+                  type: object
+                  description: Merged with existing metadata
+      responses:
+        "200":
+          description: Updated contact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+
+  /tenants:
+    post:
+      operationId: createTenant
+      summary: Create tenant
+      description: Register a new tenant (your customer) in WaBridge. The tenant starts in `pending` status until they connect their WhatsApp number via a setup link.
+      tags:
+        - Tenants
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  description: Display name for the tenant
+                external_id:
+                  type: string
+                  description: Your internal customer ID for reference
+            examples:
+              basic:
+                value:
+                  name: "Acme Corp"
+                  external_id: "cust_12345"
+      responses:
+        "201":
+          description: Tenant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+
+    get:
+      operationId: listTenants
+      summary: List tenants
+      tags:
+        - Tenants
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, connected, disconnected, token_expiring]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Tenant"
+                  total:
+                    type: integer
+
+  /tenants/{id}:
+    get:
+      operationId: getTenant
+      summary: Get tenant
+      tags:
+        - Tenants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tenant details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+
+    delete:
+      operationId: deleteTenant
+      summary: Delete tenant
+      description: Permanently delete a tenant and all associated data.
+      tags:
+        - Tenants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tenant deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /tenants/{id}/setup-link:
+    post:
+      operationId: createSetupLink
+      summary: Create setup link
+      description: |
+        Generate a one-time link for your customer to connect their WhatsApp Business Account.
+        The link guides them through Meta's Embedded Signup flow. Previous unused links are automatically invalidated.
+      tags:
+        - Tenants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success_redirect:
+                  type: string
+                  format: uri
+                  description: URL to redirect after successful setup
+                failure_redirect:
+                  type: string
+                  format: uri
+                  description: URL to redirect on setup failure
+      responses:
+        "200":
+          description: Setup link created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: One-time setup URL to share with your customer
+                  expires_at:
+                    type: string
+                    format: date-time
+                    description: Link expires after 30 days
+
+  /tenants/{id}/inbox-token:
+    post:
+      operationId: generateInboxToken
+      summary: Generate inbox token
+      description: |
+        Generate a short-lived JWT for embedding the WaBridge inbox component in your app.
+        The token is valid for 24 hours and scoped to the specified tenant.
+      tags:
+        - Tenants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Inbox token generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token for inbox embed
+                  expires_at:
+                    type: string
+                    format: date-time
+
+  /templates:
+    get:
+      operationId: listTemplates
+      summary: List templates
+      description: Retrieve WhatsApp message templates for a tenant.
+      tags:
+        - Templates
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [APPROVED, PENDING, REJECTED]
+      responses:
+        "200":
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Template"
+
+    post:
+      operationId: createTemplate
+      summary: Create template
+      description: |
+        Submit a new message template to Meta for approval. Templates are required for sending messages outside the 24-hour conversation window.
+        The template starts in `PENDING` status and is updated when Meta approves or rejects it.
+      tags:
+        - Templates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, name, category, components]
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                  description: Template name (lowercase, underscores only)
+                language:
+                  type: string
+                  default: en
+                category:
+                  type: string
+                  enum: [MARKETING, UTILITY, AUTHENTICATION]
+                components:
+                  type: array
+                  description: Meta template component format
+                  items:
+                    type: object
+      responses:
+        "201":
+          description: Template submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Template"
+
+  /templates/{id}:
+    get:
+      operationId: getTemplate
+      summary: Get template
+      tags:
+        - Templates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Template"
+
+    delete:
+      operationId: deleteTemplate
+      summary: Delete template
+      description: Delete a template from both WaBridge and Meta.
+      tags:
+        - Templates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Template deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /templates/sync:
+    post:
+      operationId: syncTemplates
+      summary: Sync templates from Meta
+      description: Fetch all templates from Meta's API and sync them to WaBridge. Useful after creating templates directly in the Meta Business Manager.
+      tags:
+        - Templates
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Templates synced
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synced:
+                    type: integer
+                    description: Number of templates synced
+
+  /automations:
+    get:
+      operationId: listAutomations
+      summary: List automations
+      tags:
+        - Automations
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of automations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Automation"
+
+    post:
+      operationId: createAutomation
+      summary: Create automation
+      description: |
+        Create a new automation workflow. Automations are created in an inactive state by default.
+
+        **Trigger types:**
+        - `message_received` — fires on every inbound message
+        - `keyword_match` — fires when message matches a keyword
+
+        **Workflow node types:**
+        - `condition` — branch based on message content
+        - `send_message` — send a reply
+        - `ai_respond` — generate an AI-powered reply
+        - `call_webhook` — call an external URL
+        - `assign_conversation` — assign to a team member
+      tags:
+        - Automations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, name, trigger_type]
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                description:
+                  type: string
+                trigger_type:
+                  type: string
+                  enum: [message_received, keyword_match]
+                trigger_config:
+                  type: object
+                  description: "For keyword_match: `{\"keyword\": \"help\"}`"
+                workflow:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/WorkflowNode"
+                max_executions_per_hour:
+                  type: integer
+                  default: 100
+            examples:
+              ai_reply:
+                summary: AI auto-reply automation
+                value:
+                  tenant_id: "t_abc123"
+                  name: "AI Support Agent"
+                  trigger_type: "message_received"
+                  workflow:
+                    - type: "ai_respond"
+                      config:
+                        system_prompt: "You are a helpful support agent. Be concise."
+                        model: "claude-sonnet-4-5-20250514"
+                        max_tokens: 300
+              keyword:
+                summary: Keyword-triggered reply
+                value:
+                  tenant_id: "t_abc123"
+                  name: "Help Menu"
+                  trigger_type: "keyword_match"
+                  trigger_config:
+                    keyword: "help"
+                  workflow:
+                    - type: "send_message"
+                      config:
+                        body: "How can we help? Reply with:\n1. Orders\n2. Returns\n3. Other"
+      responses:
+        "201":
+          description: Automation created (inactive)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Automation"
+
+  /automations/{id}:
+    get:
+      operationId: getAutomation
+      summary: Get automation
+      tags:
+        - Automations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Automation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Automation"
+
+    patch:
+      operationId: updateAutomation
+      summary: Update automation
+      description: Update automation properties. Use `is_active` to enable or disable.
+      tags:
+        - Automations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id]
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                description:
+                  type: string
+                is_active:
+                  type: boolean
+                trigger_config:
+                  type: object
+                workflow:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/WorkflowNode"
+                max_executions_per_hour:
+                  type: integer
+      responses:
+        "200":
+          description: Updated automation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Automation"
+
+    delete:
+      operationId: deleteAutomation
+      summary: Delete automation
+      tags:
+        - Automations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Automation deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /automations/{id}/logs:
+    get:
+      operationId: getAutomationLogs
+      summary: Get automation logs
+      description: Retrieve execution logs for an automation.
+      tags:
+        - Automations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [success, error, rate_limited]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Automation execution logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AutomationLog"
+                  total:
+                    type: integer
+
+  /media/upload:
+    post:
+      operationId: uploadMedia
+      summary: Upload media
+      description: |
+        Upload a media file to use in messages. Returns a `media_id` you can reference when sending media messages.
+
+        **Size limits:**
+        | Type | Max Size |
+        |------|----------|
+        | JPEG, PNG | 5 MB |
+        | MP4, 3GPP | 16 MB |
+        | Audio | 16 MB |
+        | PDF | 100 MB |
+        | WebP (sticker) | 500 KB |
+      tags:
+        - Media
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Media uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  media_id:
+                    type: string
+                    description: Meta media ID to use in messages
+                  url:
+                    type: string
+                    description: Cached storage URL
+
+  /media/{media_id}:
+    get:
+      operationId: downloadMedia
+      summary: Download media
+      description: Download or proxy a media file. Returns the file from cache if available, otherwise fetches from Meta.
+      tags:
+        - Media
+      parameters:
+        - name: media_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Media file binary content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary

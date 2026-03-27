@@ -1,0 +1,42 @@
+---
+title: Installation
+description: Install the WaBridge SDK
+---
+
+## npm
+
+```bash
+npm install @wabridge/sdk
+```
+
+## yarn
+
+```bash
+yarn add @wabridge/sdk
+```
+
+## pnpm
+
+```bash
+pnpm add @wabridge/sdk
+```
+
+## Configuration
+
+```typescript
+import { WhatsAppBridge } from "@wabridge/sdk";
+
+const client = new WhatsAppBridge({
+  baseUrl: "https://api.wabridge.co",
+  apiKey: process.env.WABRIDGE_API_KEY,
+});
+```
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `baseUrl` | string | Yes | WaBridge API base URL |
+| `apiKey` | string | Yes | Your WaBridge API key |
+
+<Warning>
+  Never expose your API key in client-side code. Use the SDK on your server only. For frontend inbox embedding, use [inbox tokens](/api-reference/tenants/generate-inbox-token) instead.
+</Warning>
